@@ -1375,3 +1375,87 @@ just because an AI model can name all of them.
 
 The project should teach backend architecture, not provider collecting.
 
+
+<!-- Steps after npm i (in both backend/ and frontend/)
+1. Backend env file
+Copy backend/.env.example → backend/.env and fill in:
+
+DB_HOST=localhost, DB_PORT=3306, DB_USERNAME, DB_PASSWORD, DB_DATABASE — match what you created above.
+JWT_SECRET — generate a new random value, don't reuse this machine's: node -e "console.log(require('crypto').randomBytes(64).toString('base64'))"
+EMAIL_PROVIDER=console is fine for local dev (OTPs print to the terminal instead of sending real email) — only set smtp + fill SMTP_USER/SMTP_PASSWORD (a Gmail App Password, not your real password) if you want real emails.
+GEMINI_API_KEY — required (the app throws on startup without it). Groq/Mistral/OpenRouter keys are optional — leave blank to just run Gemini-only.
+CORS_ALLOWED_ORIGINS — must include wherever the frontend will run, e.g. http://localhost:5173.
+FRONTEND_URL — used in email links, set to your frontend's URL.
+2. Run database migrations (mandatory — the DB starts empty, synchronize is off on purpose):
+
+
+cd backend
+npm run migration:run
+3. Frontend env file
+Copy frontend/.env.example → frontend/.env, confirm:
+
+
+VITE_API_BASE_URL=http://localhost:4000/api
+(adjust the host/port if the backend runs elsewhere).
+
+4. Start both servers (two terminals):
+
+
+cd backend && npm run dev     # http://localhost:4000
+cd frontend && npm run dev    # http://localhost:5173
+5. Verify
+
+Backend terminal should print [Database] Connected to MySQL and [Server] Listening on port 4000.
+Open the frontend URL, sign up a new account — with EMAIL_PROVIDER=console, the OTP code prints in the backend terminal (not actually emailed).
+One thing to double check if moving across machines/OSes: file paths for uploaded documents are stored relative to the backend working directory, so just make sure you always run npm run dev/npm start from inside backend/ (not a parent folder) so that upload storage resolves consistently. -->
+
+<!-- on new pc, data base how to connect
+12:54 PM
+Here's the database-specific setup for a new PC, in detail.
+
+Option A: XAMPP (simplest, matches this project's dev setup)
+Install XAMPP from apachefriends.org (includes MariaDB, which is MySQL-compatible).
+Open the XAMPP Control Panel → start MySQL.
+Open phpMyAdmin (XAMPP Control Panel → MySQL → Admin, or http://localhost/phpmyadmin).
+Create the database and user via the SQL tab:
+
+CREATE DATABASE auth_app CHARACTER SET utf8mb4;
+CREATE USER 'auth_app_user'@'localhost' IDENTIFIED BY 'yourStrongPassword';
+GRANT ALL PRIVILEGES ON auth_app.* TO 'auth_app_user'@'localhost';
+FLUSH PRIVILEGES;
+Option B: Standalone MySQL Server
+Install MySQL Community Server, note the port (default 3306).
+Connect via mysql CLI or MySQL Workbench and run the same CREATE DATABASE/CREATE USER/GRANT statements above.
+Point the backend at it
+In backend/.env:
+
+
+DB_HOST=localhost
+DB_PORT=3306
+DB_USERNAME=auth_app_user
+DB_PASSWORD=yourStrongPassword
+DB_DATABASE=auth_app
+These four values are the entire connection — the app reads them in src/config/env.ts and TypeORM uses them in src/database/data-source.ts. No other config needed (no connection string/URL format — it's discrete host/port/user/password/database fields).
+
+Create the tables
+The database starts completely empty — synchronize: false is set deliberately (no auto-schema-sync in prod-style setups), so tables only exist after running migrations:
+
+
+cd backend
+npm run migration:run
+This creates every table (users, conversations, messages, knowledge entries/chunks, documents, ai_provider_usage, etc.) in one go, in order.
+
+Verify the connection actually works
+
+cd backend
+npm run dev
+Look for [Database] Connected to MySQL in the terminal. If instead you see a connection error:
+
+ECONNREFUSED → MySQL isn't running (start it in XAMPP/services).
+ER_ACCESS_DENIED_ERROR → wrong DB_USERNAME/DB_PASSWORD, or the user wasn't granted privileges on auth_app.
+ER_BAD_DB_ERROR → the database wasn't created, or the name doesn't match DB_DATABASE.
+Quick manual check without the app, from the backend folder:
+
+
+mysql -u auth_app_user -p -h localhost -P 3306 auth_app -e "SHOW TABLES;"
+Before migrations: empty. After npm run migration:run: should list all the app's tables. -->
