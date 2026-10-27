@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chatbot Auth</title>
+    <script>
+      // Applies any stored theme preference before first paint, to avoid a flash of the
+      // wrong theme. Mirrors src/lib/theme.ts's storage key/values exactly — kept tiny and
+      // dependency-free since it must run inline, before the React bundle loads.
+      (function () {
+        try {
+          var pref = window.localStorage.getItem("theme-preference");
+          if (pref === "light" || pref === "dark") {
+            document.documentElement.setAttribute("data-theme", pref);
+          }
+        } catch (e) {
+          // Storage unavailable — fall back to the prefers-color-scheme media query.
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-BP80Msu6.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-iiRZA272.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
